@@ -1,0 +1,15 @@
+.git
+.gitignore
+**/.gitkeep
+*.md
+**/__pycache__/
+**/*.pyc
+**/.venv/
+**/.ruff_cache/
+**/.pytest_cache/
+**/node_modules/
+**/dist/
+frontend/dist
+backend/dev.db
+backend/.env
+**/.DS_Store

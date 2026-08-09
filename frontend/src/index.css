@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  --color-graphite-950: #0b0d0f;
+  --color-graphite-900: #101316;
+  --color-graphite-850: #14181c;
+  --color-graphite-800: #1a1f24;
+  --color-graphite-700: #242a31;
+  --color-graphite-600: #333b44;
+  --color-graphite-500: #4a5560;
+  --color-graphite-400: #6b7684;
+  --color-graphite-300: #9aa4b0;
+  --color-graphite-200: #c6cdd6;
+  --color-graphite-100: #e2e6eb;
+  --color-graphite-50: #f2f4f7;
+
+  --color-accent-300: #9cc2ff;
+  --color-accent-400: #6fa3ff;
+  --color-accent-500: #4c8dff;
+  --color-accent-600: #3a75e8;
+  --color-accent-700: #2f5fbd;
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    "Apple Color Emoji", sans-serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-graphite-950 font-sans text-graphite-100 antialiased;
+  min-height: 100dvh;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+input,
+textarea {
+  outline: none;
+}
+
+::selection {
+  background: var(--color-accent-500);
+  color: #fff;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}

@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[oc]
+build/
+wheels/
+*.egg-info
+backend/.venv/
+backend/.ruff_cache/
+backend/.pytest_cache/
+backend/dev.db
+backend/.env
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/frontend_dist/
+
+# Built frontend served by backend
+backend/frontend_dist/
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local env
+.env
