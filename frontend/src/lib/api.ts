@@ -34,7 +34,10 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (res.status === 401 && window.location.pathname !== '/login') {
     const next = window.location.pathname + window.location.search
-    window.location.replace(`/login?next=${encodeURIComponent(next)}`)
+    // Never nest the redirect: if we somehow loaded the SPA at an /api path,
+    // go straight to the login page without a `next` pointing back at the API.
+    const target = next.startsWith('/api/') ? '/login' : `/login?next=${encodeURIComponent(next)}`
+    window.location.replace(target)
     throw new ApiError(401, 'Not authenticated')
   }
 

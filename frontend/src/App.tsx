@@ -1,6 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
-import { UpdateToast } from './components/UpdateToast'
 import { useMe } from './hooks/useMe'
 import { DayPage } from './pages/DayPage'
 import { LoginPage } from './pages/LoginPage'
@@ -36,7 +35,6 @@ export default function App() {
         <Route path="/date/:date" element={<DayPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <UpdateToast />
     </AuthGate>
   )
 }
