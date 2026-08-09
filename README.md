@@ -90,14 +90,6 @@ Set these in Coolify:
 | `ALLOWED_IDENTITIES`   | `github:leopeltola`                                         |
 | `STATIC_DIR`           | `frontend_dist` (default, leave as-is)                      |
 
-## Installing on iPhone
-
-1. Open the deployed site in Safari.
-2. Share → **Add to Home Screen**.
-3. It opens standalone, full-screen, with the app icon.
-
-The PWA shows a "new version available" prompt when the app updates.
-
 ## Notes
 
 - Editing past days is allowed; everything syncs to the server.
