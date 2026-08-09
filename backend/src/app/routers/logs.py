@@ -32,7 +32,9 @@ def _set_out(set: Set, unit: str, is_pr: bool) -> SetOut:
     )
 
 
-def _log_out(log: WorkoutLog, unit: str, is_new_pr: bool, all_time_max: float) -> LogOut:
+def _log_out(
+    log: WorkoutLog, unit: str, is_new_pr: bool, record: tuple[date, int] | None
+) -> LogOut:
     return LogOut(
         id=log.id,
         exercise_id=log.exercise_id,
@@ -44,26 +46,22 @@ def _log_out(log: WorkoutLog, unit: str, is_new_pr: bool, all_time_max: float) -
         unit=ExerciseUnit(unit),
         is_new_pr=is_new_pr,
         sets=[
-            _set_out(s, unit, _is_pr(unit, s, all_time_max))
+            _set_out(s, unit, record is not None and (log.log_date, s.set_number) == record)
             for s in sorted(log.sets, key=lambda s: s.set_number)
         ],
     )
 
 
-def _is_pr(unit: str, set: Set, all_time_max: float) -> bool:
-    if all_time_max <= 0:
-        return False
-    return abs(model_set_score(unit, set) - all_time_max) < 1e-6
-
-
 def _pr_context(
     db: Session, user_id: int, exercise_ids: set[int]
-) -> tuple[dict[int, float], dict[int, float], dict[int, float], dict[int, str]]:
+) -> tuple[dict[int, tuple[date, int]], dict[int, float], dict[int, float], dict[int, str]]:
     """Per-exercise record context for a set of exercises.
 
-    Returns (all_time_max, prior_max, day_best, unit) where the *_max maps are keyed by
-    workout_log id and unit is keyed by exercise id. prior_max is the best score seen on
-    strictly earlier days, so a day whose best exceeds it is a new PR.
+    Returns (record, prior_max, day_best, unit) where record maps exercise id to the
+    (log_date, set_number) of the earliest set holding the all-time best score, *_max
+    maps are keyed by workout_log id, and unit is keyed by exercise id. prior_max is
+    the best score seen on strictly earlier days, so a day whose best exceeds it is a
+    new PR.
     """
     if not exercise_ids:
         return {}, {}, {}, {}
@@ -74,6 +72,7 @@ def _pr_context(
     ).all()
     log_ids = [r.id for r in rows]
     exercise_of_log = {r.id: r.exercise_id for r in rows}
+    date_of_log = {r.id: r.log_date for r in rows}
     sets_by_log: dict[int, list[Set]] = defaultdict(list)
     for s in db.scalars(select(Set).where(Set.workout_log_id.in_(log_ids))).all():
         sets_by_log[s.workout_log_id].append(s)
@@ -91,6 +90,24 @@ def _pr_context(
         day_best[log_id] = best
         all_time_max[exercise_of_log[log_id]] = max(all_time_max[exercise_of_log[log_id]], best)
 
+    # Earliest (log_date, set_number) that holds each exercise's all-time best.
+    record: dict[int, tuple[date, int]] = {}
+    for exercise_id, best in all_time_max.items():
+        if best <= 0:
+            continue
+        unit = units[exercise_id]
+        best_key: tuple[date, int] | None = None
+        for log_id, sets in sets_by_log.items():
+            if exercise_of_log[log_id] != exercise_id:
+                continue
+            for s in sets:
+                if abs(model_set_score(unit, s) - best) < 1e-6:
+                    key = (date_of_log[log_id], s.set_number)
+                    if best_key is None or key < best_key:
+                        best_key = key
+        if best_key is not None:
+            record[exercise_id] = best_key
+
     # Prior best per log, computed by scanning each exercise's days in date order.
     by_exercise: dict[int, list[tuple[date, int]]] = defaultdict(list)
     for r in rows:
@@ -103,7 +120,7 @@ def _pr_context(
             prior_max[log_id] = running
             running = max(running, day_best.get(log_id, 0.0))
 
-    return dict(all_time_max), prior_max, day_best, units
+    return record, prior_max, day_best, units
 
 
 @router.get("/logs", response_model=list[LogOut])
@@ -121,15 +138,13 @@ def list_logs(
     if not logs:
         return []
 
-    all_time_max, prior_max, day_best, units = _pr_context(
-        db, user.id, {log.exercise_id for log in logs}
-    )
+    record, prior_max, day_best, units = _pr_context(db, user.id, {log.exercise_id for log in logs})
     return [
         _log_out(
             log,
             units[log.exercise_id],
             day_best.get(log.id, 0.0) > prior_max.get(log.id, 0.0),
-            all_time_max.get(log.exercise_id, 0.0),
+            record.get(log.exercise_id),
         )
         for log in logs
     ]
@@ -241,13 +256,13 @@ def delete_log(
 
 
 def _log_with_context(db: Session, user: User, log: WorkoutLog) -> LogOut:
-    all_time_max, prior_max, day_best, units = _pr_context(db, user.id, {log.exercise_id})
+    record, prior_max, day_best, units = _pr_context(db, user.id, {log.exercise_id})
     unit = units.get(log.exercise_id, "weight_reps")
     return _log_out(
         log,
         unit,
         day_best.get(log.id, 0.0) > prior_max.get(log.id, 0.0),
-        all_time_max.get(log.exercise_id, 0.0),
+        record.get(log.exercise_id),
     )
 
 

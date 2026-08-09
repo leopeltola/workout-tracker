@@ -105,6 +105,23 @@ def get_exercise(
     # Stable sorts: score desc, with date desc breaking ties.
     top.sort(key=lambda t: t.log_date, reverse=True)
     top.sort(key=lambda t: t.score, reverse=True)
+
+    # The single record is the earliest (log_date, set_number) among the best score.
+    best_score = max((t.score for t in top), default=0.0)
+    record = None
+    if best_score > 0:
+        record = min(
+            (t for t in top if abs(t.score - best_score) < 1e-6),
+            key=lambda t: (t.log_date, t.set_number),
+        )
+    for t in top:
+        t.is_record = record is not None and (t.log_date, t.set_number) == (
+            record.log_date,
+            record.set_number,
+        )
+    for h in history:
+        h.is_record_day = record is not None and h.log_date == record.log_date
+
     return ExerciseDetailOut(
         exercise=ExerciseOut.model_validate(exercise),
         top_sets=top[:TOP_SETS],

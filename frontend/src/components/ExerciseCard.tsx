@@ -113,7 +113,7 @@ export function ExerciseCard({ log, focusRequested, onFocusDone }: ExerciseCardP
 
   const isRepsOnly = unit === 'reps'
   const isTime = unit === 'time'
-  const cols = isRepsOnly ? 'grid-cols-[3rem_2fr_2rem]' : 'grid-cols-[3rem_1fr_1fr_2rem]'
+  const cols = 'grid-cols-[3rem_1fr_1fr_2rem]'
 
   return (
     <div className="rounded-2xl border border-graphite-800 bg-graphite-850">
@@ -150,11 +150,9 @@ export function ExerciseCard({ log, focusRequested, onFocusDone }: ExerciseCardP
             <span className="text-[11px] font-medium uppercase tracking-wide text-graphite-500">
               Set
             </span>
-            {!isRepsOnly && (
-              <span className="text-[11px] font-medium uppercase tracking-wide text-graphite-500">
-                kg
-              </span>
-            )}
+            <span className="text-[11px] font-medium uppercase tracking-wide text-graphite-500">
+              {isRepsOnly ? '' : 'kg'}
+            </span>
             <span className="text-[11px] font-medium uppercase tracking-wide text-graphite-500">
               {isTime ? 'Time' : 'Reps'}
             </span>
@@ -162,7 +160,6 @@ export function ExerciseCard({ log, focusRequested, onFocusDone }: ExerciseCardP
           </div>
           <ul className="divide-y divide-graphite-800/60">
             {sets.map((set, i) => {
-              const isNewPr = Boolean(set.is_pr && log.is_new_pr)
               return (
                 <li
                   key={set.id ?? `new-${i}-${set.set_number}`}
@@ -170,14 +167,11 @@ export function ExerciseCard({ log, focusRequested, onFocusDone }: ExerciseCardP
                 >
                   <span className="flex items-center gap-1 text-sm font-medium text-graphite-400">
                     {set.set_number}
-                    {set.is_pr && (
-                      <CrownIcon
-                        isNew={isNewPr}
-                        className="h-3.5 w-3.5 shrink-0"
-                      />
-                    )}
+                    {set.is_pr && <CrownIcon className="h-3.5 w-3.5 shrink-0" />}
                   </span>
-                  {!isRepsOnly && (
+                  {isRepsOnly ? (
+                    <span aria-hidden="true" />
+                  ) : (
                     <StepperInput
                       ref={i === 0 ? firstInputRef : undefined}
                       value={set.weight_kg}
@@ -263,12 +257,12 @@ function ChevronIcon({ className }: { className?: string }) {
   )
 }
 
-function CrownIcon({ isNew, className }: { isNew: boolean; className?: string }) {
+function CrownIcon({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"
       fill="currentColor"
-      className={`${className} ${isNew ? 'text-accent-300' : 'text-amber-300'}`}
+      className={`${className} text-amber-300`}
       aria-hidden="true"
     >
       <path d="m2.5 8 4.2 3.5L11 4.6a1.6 1.6 0 0 1 2 0l4.3 6.9L21.5 8a1 1 0 0 1 1.6.9l-1.3 8.6a1.6 1.6 0 0 1-1.6 1.4H3.8a1.6 1.6 0 0 1-1.6-1.4L.9 8.9A1 1 0 0 1 2.5 8ZM5 19.5h14V21H5v-1.5Z" />

@@ -88,12 +88,14 @@ class TopSetOut(BaseModel):
     reps: int | None = None
     duration_s: int | None = None
     score: float
+    is_record: bool = False
 
 
 class HistoryEntryOut(BaseModel):
     log_id: int
     log_date: date
     best_score: float
+    is_record_day: bool = False
     sets: list[SetOut]
 
 

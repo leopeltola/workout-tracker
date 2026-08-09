@@ -50,12 +50,14 @@ export interface TopSet {
   reps: number | null
   duration_s: number | null
   score: number
+  is_record?: boolean
 }
 
 export interface HistoryEntry {
   log_id: number
   log_date: string
   best_score: number
+  is_record_day?: boolean
   sets: SetData[]
 }
 

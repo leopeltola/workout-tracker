@@ -178,7 +178,7 @@ export function ExercisePage() {
                       {formatTop(unit, t)}
                     </span>
                     <span className="text-xs text-graphite-500">{fmtDay(t.log_date)}</span>
-                    {i === 0 && <CrownIcon className="h-4 w-4 shrink-0 text-amber-300" />}
+                    {t.is_record && <CrownIcon className="h-4 w-4 shrink-0 text-amber-300" />}
                   </li>
                 ))}
               </ul>
@@ -196,7 +196,7 @@ export function ExercisePage() {
             {history.length > 0 ? (
               <ul className="divide-y divide-graphite-800/60 px-4 pb-2">
                 {history.map((h) => {
-                  const isRecordDay = stats !== null && h.best_score === stats.bestScore && h.best_score > 0
+                  const isRecordDay = Boolean(h.is_record_day)
                   return (
                     <li key={h.log_id} className="py-3">
                       <div className="flex items-center justify-between">
