@@ -21,7 +21,7 @@ export function DateStrip({ date, onSelect }: DateStripProps) {
   }, [date])
 
   return (
-    <div className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 py-2">
+    <div className="no-scrollbar flex gap-1.5 overflow-x-auto px-4 py-2">
       {days.map((iso) => {
         const selected = iso === date
         const isToday = iso === today

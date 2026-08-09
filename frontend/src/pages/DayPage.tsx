@@ -31,7 +31,7 @@ export function DayPage() {
   const isToday = date === today
 
   return (
-    <div className="min-h-dvh bg-graphite-950">
+    <div className="min-h-dvh overflow-x-clip bg-graphite-950">
       <div className="mx-auto max-w-md">
         <div className="sticky top-0 z-30 border-b border-graphite-800 bg-graphite-950/95 backdrop-blur safe-top">
           <div className="flex items-center justify-between px-4 pb-1 pt-2">
