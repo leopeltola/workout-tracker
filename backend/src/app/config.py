@@ -1,6 +1,28 @@
 from functools import lru_cache
+from urllib.parse import urlsplit, urlunsplit
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_POSTGRES_SCHEMES = {"postgres", "postgresql"}
+
+
+def _with_psycopg_driver(url: str) -> str:
+    """Normalize postgres://... to postgresql+psycopg://... so SQLAlchemy can
+    resolve a driver. Coolify's default Postgres URL is postgres:// which has none."""
+    parts = urlsplit(url)
+    if parts.scheme in _POSTGRES_SCHEMES:
+        scheme = "postgresql" if parts.scheme == "postgres" else parts.scheme
+        return urlunsplit(
+            (
+                f"{scheme}+psycopg",
+                parts.netloc,
+                parts.path,
+                parts.query,
+                parts.fragment,
+            )
+        )
+    return url
 
 
 class Settings(BaseSettings):
@@ -34,6 +56,13 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _normalize_database_url(cls, value: object) -> object:
+        if isinstance(value, str):
+            return _with_psycopg_driver(value)
+        return value
 
     @property
     def allowed_identity_set(self) -> set[str]:
