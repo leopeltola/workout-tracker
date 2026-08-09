@@ -12,6 +12,7 @@ from ..schemas import (
     LogCreate,
     LogOut,
     LogUpdate,
+    SetOut,
 )
 
 router = APIRouter(prefix="/api", tags=["logs"])
@@ -26,7 +27,7 @@ def _to_log_out(log: WorkoutLog) -> LogOut:
         log_date=log.log_date,
         order_index=log.order_index,
         notes=log.notes,
-        sets=[set for set in log.sets],
+        sets=[SetOut.model_validate(set) for set in log.sets],
     )
 
 

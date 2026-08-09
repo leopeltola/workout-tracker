@@ -27,7 +27,7 @@ def build_authorize_url(state: str) -> str:
         "scope": SCOPE,
         "state": state,
     }
-    return httpx.URL(AUTHORIZE_URL, params=params)
+    return str(httpx.URL(AUTHORIZE_URL, params=params))
 
 
 async def exchange_code(code: str) -> str:

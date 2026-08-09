@@ -50,6 +50,31 @@ def test_callback_success_flow(client, db_session, monkeypatch):
     assert me.json()["user"]["username"] == "leopeltola"
 
 
+def test_callback_second_login_reuses_existing_identity(client, db_session, monkeypatch):
+    _stub_github(
+        monkeypatch,
+        {
+            "provider_id": "12345",
+            "username": "leopeltola",
+            "email": "leopeltola@gmail.com",
+            "avatar_url": None,
+        },
+    )
+
+    for _ in range(2):
+        state = _valid_state_cookie(client)
+        resp = client.get(
+            "/api/auth/callback",
+            params={"code": "real-code", "state": state},
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302, resp.text
+        assert resp.headers["location"] == "/"
+
+    assert db_session.query(User).count() == 1
+    assert db_session.query(AuthIdentity).count() == 1
+
+
 def test_callback_rejects_mismatched_state(client, db_session):
     state = issue_oauth_state()
     resp = client.get(

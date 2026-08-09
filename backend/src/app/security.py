@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .config import settings
-from .models import User, UserSession
+from .models import AuthIdentity, User, UserSession
 
 
 def _sign(value: str, secret: str) -> str:
@@ -57,13 +57,10 @@ def get_user_by_token(db: Session, token: str | None) -> User | None:
     return session.user if session else None
 
 
-def find_user_by_identity(db: Session, provider: str, provider_id: str) -> User | None:
-    from .models import AuthIdentity
-
-    identity = db.scalar(
+def find_user_by_identity(db: Session, provider: str, provider_id: str) -> AuthIdentity | None:
+    return db.scalar(
         select(AuthIdentity).where(
             AuthIdentity.provider == provider,
             AuthIdentity.provider_id == provider_id,
         )
     )
-    return identity.user if identity else None
