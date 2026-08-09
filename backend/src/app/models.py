@@ -9,6 +9,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -85,6 +86,11 @@ class Exercise(Base):
     )
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     muscle_group: Mapped[str | None] = mapped_column(String(80))
+    # How this exercise is measured: "weight_reps" (default), "reps" (bodyweight),
+    # or "time" (holds/carries). Weight is optional in every mode.
+    unit: Mapped[str] = mapped_column(
+        String(20), default="weight_reps", server_default=text("'weight_reps'"), nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

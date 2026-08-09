@@ -1,5 +1,5 @@
 import { api } from './api'
-import type { Exercise, Log, Me, SetData } from './types'
+import type { Exercise, ExerciseDetail, ExerciseUnit, Log, Me, SetData } from './types'
 
 export function getMe(): Promise<Me> {
   return api('/api/me')
@@ -13,6 +13,7 @@ export interface CreateLogPayload {
   log_date: string
   exercise_name: string
   muscle_group?: string | null
+  unit?: ExerciseUnit
 }
 
 export function createLog(payload: CreateLogPayload): Promise<Log> {
@@ -38,4 +39,15 @@ export function getExercises(opts: { q?: string; limit?: number } = {}): Promise
   if (opts.q) params.set('q', opts.q)
   if (opts.limit) params.set('limit', String(opts.limit))
   return api(`/api/exercises?${params}`)
+}
+
+export function getExercise(id: number): Promise<ExerciseDetail> {
+  return api(`/api/exercises/${id}`)
+}
+
+export function updateExerciseUnit(id: number, unit: ExerciseUnit): Promise<Exercise> {
+  return api(`/api/exercises/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ unit }),
+  })
 }

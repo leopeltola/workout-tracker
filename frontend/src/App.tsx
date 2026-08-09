@@ -2,6 +2,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import { useMe } from './hooks/useMe'
 import { DayPage } from './pages/DayPage'
+import { ExercisePage } from './pages/ExercisePage'
 import { LoginPage } from './pages/LoginPage'
 
 function Splash() {
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<DayPage />} />
         <Route path="/date/:date" element={<DayPage />} />
+        <Route path="/exercise/:id" element={<ExercisePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthGate>

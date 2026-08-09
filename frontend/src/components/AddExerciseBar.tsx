@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { useDebounce } from '../hooks/useDebounce'
 import { createLog, getExercises } from '../lib/client'
-import type { Exercise, Log } from '../lib/types'
+import type { Exercise, ExerciseUnit, Log } from '../lib/types'
 
 interface AddExerciseBarProps {
   date: string
@@ -14,12 +14,20 @@ interface Suggestion extends Exercise {
   isNew?: boolean
 }
 
+const MODES: { value: ExerciseUnit; label: string; hint: string }[] = [
+  { value: 'weight_reps', label: 'Weight + reps', hint: 'Barbell & dumbbell lifts' },
+  { value: 'reps', label: 'Reps only', hint: 'Bodyweight exercises' },
+  { value: 'time', label: 'Time', hint: 'Planks, holds, carries' },
+]
+
 export function AddExerciseBar({ date, onAdded }: AddExerciseBarProps) {
   const queryClient = useQueryClient()
   const inputRef = useRef<HTMLInputElement>(null)
   const [value, setValue] = useState('')
   const [focused, setFocused] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [creating, setCreating] = useState<string | null>(null)
+  const [modeIndex, setModeIndex] = useState(0)
 
   const debounced = useDebounce(value.trim(), 200)
 
@@ -38,12 +46,15 @@ export function AddExerciseBar({ date, onAdded }: AddExerciseBarProps) {
   })
 
   const add = useMutation({
-    mutationFn: (name: string) => createLog({ log_date: date, exercise_name: name }),
+    mutationFn: (p: { name: string; unit?: ExerciseUnit }) =>
+      createLog({ log_date: date, exercise_name: p.name, unit: p.unit }),
     onSuccess: (log) => {
       queryClient.invalidateQueries({ queryKey: ['logs', date] })
       queryClient.invalidateQueries({ queryKey: ['exercises'] })
       setValue('')
       setActiveIndex(0)
+      setCreating(null)
+      setModeIndex(0)
       onAdded(log)
     },
   })
@@ -52,19 +63,43 @@ export function AddExerciseBar({ date, onAdded }: AddExerciseBarProps) {
     if (debounced.length > 0) {
       const list: Suggestion[] = matches.data ?? []
       const exact = list.some((e) => e.name.toLowerCase() === debounced.toLowerCase())
-      if (!exact) list.unshift({ id: 0, name: debounced, muscle_group: null, isNew: true })
+      if (!exact) list.unshift({ id: 0, name: debounced, muscle_group: null, unit: 'weight_reps', isNew: true })
       return list
     }
     return (recents.data ?? []).map((e) => ({ ...e }))
   })()
 
-  const open = focused && suggestions.length > 0
+  const open = focused && (creating !== null || suggestions.length > 0)
 
   function pick(suggestion: Suggestion) {
-    add.mutate(suggestion.name)
+    if (suggestion.isNew) {
+      setCreating(suggestion.name)
+      setModeIndex(0)
+      return
+    }
+    add.mutate({ name: suggestion.name })
+  }
+
+  function pickMode(unit: ExerciseUnit) {
+    if (creating !== null) add.mutate({ name: creating, unit })
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (creating !== null) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setModeIndex((i) => Math.min(i + 1, MODES.length - 1))
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setModeIndex((i) => Math.max(i - 1, 0))
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        pickMode(MODES[modeIndex]?.value ?? MODES[0].value)
+      } else if (e.key === 'Escape') {
+        inputRef.current?.blur()
+      }
+      return
+    }
     if (e.key === 'ArrowDown') {
       e.preventDefault()
       setActiveIndex((i) => Math.min(i + 1, suggestions.length - 1))
@@ -75,7 +110,7 @@ export function AddExerciseBar({ date, onAdded }: AddExerciseBarProps) {
       e.preventDefault()
       const target = suggestions[activeIndex] ?? suggestions[0]
       if (target) pick(target)
-      else if (value.trim()) add.mutate(value.trim())
+      else if (value.trim()) setCreating(value.trim())
     } else if (e.key === 'Escape') {
       inputRef.current?.blur()
     }
@@ -95,6 +130,7 @@ export function AddExerciseBar({ date, onAdded }: AddExerciseBarProps) {
           onChange={(e) => {
             setValue(e.target.value)
             setActiveIndex(0)
+            if (creating !== null && e.target.value.trim() !== creating) setCreating(null)
           }}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
@@ -114,41 +150,72 @@ export function AddExerciseBar({ date, onAdded }: AddExerciseBarProps) {
 
       {open && (
         <div className="absolute inset-x-4 top-full z-20 mt-1 overflow-hidden rounded-2xl border border-graphite-700 bg-graphite-850 shadow-xl">
-          {debounced.length === 0 && (
-            <p className="px-4 pt-2 text-[11px] font-medium uppercase tracking-wider text-graphite-500">
-              Recent
-            </p>
+          {creating !== null ? (
+            <div>
+              <p className="px-4 pt-2 text-[11px] font-medium uppercase tracking-wider text-graphite-500">
+                New exercise
+              </p>
+              <p className="px-4 pb-1 pt-1 text-sm font-semibold text-graphite-50">
+                “{creating}”
+              </p>
+              <ul>
+                {MODES.map((m, i) => (
+                  <li key={m.value}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => pickMode(m.value)}
+                      onMouseEnter={() => setModeIndex(i)}
+                      className={`flex w-full items-center justify-between px-4 py-3 text-left ${
+                        i === modeIndex ? 'bg-graphite-700' : ''
+                      }`}
+                    >
+                      <span className="font-medium text-graphite-100">{m.label}</span>
+                      <span className="text-xs text-graphite-500">{m.hint}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <>
+              {debounced.length === 0 && (
+                <p className="px-4 pt-2 text-[11px] font-medium uppercase tracking-wider text-graphite-500">
+                  Recent
+                </p>
+              )}
+              <ul>
+                {suggestions.map((s, i) => (
+                  <li key={s.isNew ? `new:${s.name}` : s.id}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => pick(s)}
+                      onMouseEnter={() => setActiveIndex(i)}
+                      className={`flex w-full items-center gap-3 px-4 py-3 text-left text-graphite-100 ${
+                        i === activeIndex ? 'bg-graphite-700' : ''
+                      }`}
+                    >
+                      {s.isNew ? (
+                        <>
+                          <PlusIcon className="h-4 w-4 shrink-0 text-accent-400" />
+                          <span>
+                            Create{' '}
+                            <span className="font-semibold text-accent-400">“{s.name}”</span>
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <DumbbellIcon className="h-4 w-4 shrink-0 text-graphite-500" />
+                          <span className="font-medium">{s.name}</span>
+                        </>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
-          <ul>
-            {suggestions.map((s, i) => (
-              <li key={s.isNew ? `new:${s.name}` : s.id}>
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => pick(s)}
-                  onMouseEnter={() => setActiveIndex(i)}
-                  className={`flex w-full items-center gap-3 px-4 py-3 text-left text-graphite-100 ${
-                    i === activeIndex ? 'bg-graphite-700' : ''
-                  }`}
-                >
-                  {s.isNew ? (
-                    <>
-                      <PlusIcon className="h-4 w-4 shrink-0 text-accent-400" />
-                      <span>
-                        Create{' '}
-                        <span className="font-semibold text-accent-400">“{s.name}”</span>
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <DumbbellIcon className="h-4 w-4 shrink-0 text-graphite-500" />
-                      <span className="font-medium">{s.name}</span>
-                    </>
-                  )}
-                </button>
-              </li>
-            ))}
-          </ul>
         </div>
       )}
     </div>
