@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -9,6 +9,19 @@ from .config import settings
 from .routers import auth, exercises, logs, me
 
 app = FastAPI(title=settings.app_name, version="0.1.0")
+
+
+@app.middleware("http")
+async def cache_control(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if path in ("/", "/index.html", "/sw.js", "/manifest.webmanifest"):
+        # Never let browsers keep a stale app shell or service worker.
+        response.headers["Cache-Control"] = "no-cache"
+    elif path.startswith("/assets/"):
+        # Hashed filenames are immutable; cache aggressively.
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    return response
 
 
 @app.get("/healthz")
