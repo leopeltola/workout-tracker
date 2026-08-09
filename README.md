@@ -57,17 +57,17 @@ uv run ruff format --check .
 
 ## Deploying with Coolify + GitHub Actions
 
-The CI pipeline (`.github/workflows/build.yml`) runs on pushes to `main` and
+The CI pipeline (`.github/workflows/build.yml`) runs on pushes to `master` and
 publishes the image to GHCR:
 
 ```
-ghcr.io/<owner>/<repo>:main
+ghcr.io/<owner>/<repo>:master
 ```
 
 1. **GitHub:** this repo already has Actions enabled; the workflow needs no
    secrets (it uses the automatic `GITHUB_TOKEN`, which gets `packages: write`).
 2. **Coolify:** create a resource of type **Docker Image**, set the image to
-   `ghcr.io/<owner>/<repo>:main`, and add a GHCR registry credential with a
+   `ghcr.io/<owner>/<repo>:master`, and add a GHCR registry credential with a
    personal access token scoped to `read:packages` if the repo is private.
 3. **Database:** add a Postgres database in Coolify (one-click) and point
    `DATABASE_URL` at it, e.g.
